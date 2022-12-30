@@ -62,16 +62,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
           direction: Axis.vertical,
           children: [
             AllSongs(songs: songs),
-            PlayBar(
-              songInfo: SongInfo(
-                coverImg:
-                    "https://water01.myh2o.top:1103/static/musics/cover/93.jpg",
-                title: "一粒麦子",
-                singer: "未知",
-                url:
-                    "https://water01.myh2o.top:1103/static/musics/Songs/一粒麦子.mp3",
-              ),
-            ),
+            const PlayBar(),
           ],
         ),
       ),

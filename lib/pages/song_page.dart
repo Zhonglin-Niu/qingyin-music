@@ -1,10 +1,10 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:qingyin_music/models/models.dart';
 import 'package:qingyin_music/widgets/widgets.dart';
 import '../notifiers/notifiers.dart';
+import '../page_manager.dart';
+import '../services/service_locator.dart';
 
 class SongPage extends StatefulWidget {
   const SongPage({super.key});
@@ -14,7 +14,7 @@ class SongPage extends StatefulWidget {
 }
 
 class _SongPageState extends State<SongPage> {
-  SongInfo song = Get.arguments;
+  final pageManager = getIt<PageManager>();
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -30,8 +30,15 @@ class _SongPageState extends State<SongPage> {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: MyAppBar(
-          title: song.title,
+        appBar: MyDynaMicAppBar(
+          title: ValueListenableBuilder(
+              valueListenable: pageManager.currentSongTitleNotifier,
+              builder: (_, title, __) {
+                return MyText(
+                  content: title,
+                  fontSize: 18,
+                );
+              }),
           leading: IconButton(
             onPressed: () {
               Navigator.of(context).pop();
@@ -55,14 +62,19 @@ class _SongPageState extends State<SongPage> {
                       borderRadius: BorderRadius.circular(
                           MediaQuery.of(context).size.width * 0.6),
                     ),
-                    child: CachedNetworkImage(
-                      placeholder: (context, url) => const MyText(
-                        content: "Loading...",
-                      ),
-                      imageUrl: song.coverImg,
-                      width: MediaQuery.of(context).size.width * 0.6,
-                      height: MediaQuery.of(context).size.width * 0.6,
-                      fit: BoxFit.cover,
+                    child: ValueListenableBuilder(
+                      valueListenable: pageManager.currentSongCoverImgNotifier,
+                      builder: (_, coverImg, __) {
+                        return CachedNetworkImage(
+                          placeholder: (context, url) => const MyText(
+                            content: "Loading...",
+                          ),
+                          imageUrl: coverImg,
+                          width: MediaQuery.of(context).size.width * 0.6,
+                          height: MediaQuery.of(context).size.width * 0.6,
+                          fit: BoxFit.cover,
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -93,25 +105,25 @@ class _SongPageState extends State<SongPage> {
 
 class AudioProgressBar extends StatelessWidget {
   const AudioProgressBar({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    final progressNotifier = ProgressNotifier();
-    return ValueListenableBuilder<ProgressBarState>(
-      valueListenable: progressNotifier,
-      builder: (_, value, __) {
-        return ShadowContainer(
-          width: MediaQuery.of(context).size.width * 0.9,
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
-          child: ProgressBar(
+    final pageManager = getIt<PageManager>();
+
+    return ShadowContainer(
+      width: MediaQuery.of(context).size.width * 0.9,
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+      child: ValueListenableBuilder<ProgressBarState>(
+        valueListenable: pageManager.progressNotifier,
+        builder: (_, value, __) {
+          return ProgressBar(
             progress: value.current,
             buffered: value.buffered,
             total: value.total,
-            onSeek: (Duration position) {
-              print(position);
-            },
-          ),
-        );
-      },
+            onSeek: pageManager.seek,
+          );
+        },
+      ),
     );
   }
 }
@@ -120,9 +132,9 @@ class RepeatButton extends StatelessWidget {
   const RepeatButton({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    final repeatButtonNotifier = RepeatButtonNotifier();
+    final pageManager = getIt<PageManager>();
     return ValueListenableBuilder<RepeatState>(
-      valueListenable: repeatButtonNotifier,
+      valueListenable: pageManager.repeatButtonNotifier,
       builder: (context, value, child) {
         Icon icon;
         switch (value) {
@@ -144,7 +156,7 @@ class RepeatButton extends StatelessWidget {
         }
         return IconButton(
           icon: icon,
-          onPressed: () {},
+          onPressed: pageManager.repeat,
         );
       },
     );
@@ -155,16 +167,16 @@ class PreviousSongButton extends StatelessWidget {
   const PreviousSongButton({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    final isFirstSongNotifier = ValueNotifier<bool>(true);
+    final pageManager = getIt<PageManager>();
     return ValueListenableBuilder<bool>(
-      valueListenable: isFirstSongNotifier,
+      valueListenable: pageManager.isFirstSongNotifier,
       builder: (_, isFirst, __) {
         return IconButton(
           icon: const Icon(
             Icons.skip_previous,
             color: Colors.white,
           ),
-          onPressed: (isFirst) ? null : () {},
+          onPressed: (isFirst) ? null : pageManager.previous,
         );
       },
     );
@@ -175,9 +187,9 @@ class PlayButton extends StatelessWidget {
   const PlayButton({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    final playButtonNotifier = PlayButtonNotifier();
+    final pageManager = getIt<PageManager>();
     return ValueListenableBuilder<ButtonState>(
-      valueListenable: playButtonNotifier,
+      valueListenable: pageManager.playButtonNotifier,
       builder: (_, value, __) {
         switch (value) {
           case ButtonState.loading:
@@ -185,7 +197,9 @@ class PlayButton extends StatelessWidget {
               margin: const EdgeInsets.all(8.0),
               width: 32.0,
               height: 32.0,
-              child: const CircularProgressIndicator(),
+              child: const CircularProgressIndicator(
+                color: Colors.white,
+              ),
             );
           case ButtonState.paused:
             return IconButton(
@@ -194,7 +208,7 @@ class PlayButton extends StatelessWidget {
                 color: Colors.white,
               ),
               iconSize: 32.0,
-              onPressed: () {},
+              onPressed: pageManager.play,
             );
           case ButtonState.playing:
             return IconButton(
@@ -203,7 +217,7 @@ class PlayButton extends StatelessWidget {
                 color: Colors.white,
               ),
               iconSize: 32.0,
-              onPressed: () {},
+              onPressed: pageManager.pause,
             );
         }
       },
@@ -215,16 +229,16 @@ class NextSongButton extends StatelessWidget {
   const NextSongButton({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    final isLastSongNotifier = ValueNotifier<bool>(true);
+    final pageManager = getIt<PageManager>();
     return ValueListenableBuilder<bool>(
-      valueListenable: isLastSongNotifier,
+      valueListenable: pageManager.isLastSongNotifier,
       builder: (_, isLast, __) {
         return IconButton(
           icon: const Icon(
             Icons.skip_next,
             color: Colors.white,
           ),
-          onPressed: (isLast) ? null : () {},
+          onPressed: (isLast) ? null : pageManager.next,
         );
       },
     );
@@ -235,9 +249,9 @@ class ShuffleButton extends StatelessWidget {
   const ShuffleButton({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    final isShuffleModeEnabledNotifier = ValueNotifier<bool>(false);
+    final pageManager = getIt<PageManager>();
     return ValueListenableBuilder<bool>(
-      valueListenable: isShuffleModeEnabledNotifier,
+      valueListenable: pageManager.isShuffleModeEnabledNotifier,
       builder: (context, isEnabled, child) {
         return IconButton(
           icon: (isEnabled)
@@ -249,7 +263,7 @@ class ShuffleButton extends StatelessWidget {
                   Icons.shuffle,
                   color: Colors.grey,
                 ),
-          onPressed: () {},
+          onPressed: pageManager.shuffle,
         );
       },
     );

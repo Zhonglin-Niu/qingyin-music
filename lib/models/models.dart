@@ -61,6 +61,15 @@ class SongInfo {
     return data;
   }
 
+  factory SongInfo.gen() {
+    return SongInfo(
+      coverImg: "https://water01.myh2o.top:1103/static/musics/cover/93.jpg",
+      title: "一粒麦子",
+      singer: "未知",
+      url: "https://water01.myh2o.top:1103/static/musics/Songs/一粒麦子.mp3",
+    );
+  }
+
   @override
   String toString() {
     return "$title - $singer";

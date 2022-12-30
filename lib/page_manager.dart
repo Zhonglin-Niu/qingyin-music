@@ -1,15 +1,19 @@
 import 'package:flutter/foundation.dart';
+import 'package:qingyin_music/api/api.dart';
 import 'notifiers/play_button_notifier.dart';
 import 'notifiers/progress_notifier.dart';
 import 'notifiers/repeat_button_notifier.dart';
 import 'package:audio_service/audio_service.dart';
 import 'services/service_locator.dart';
-import 'services/playlist_repository.dart';
 
 class PageManager {
   final _audioHandler = getIt<AudioHandler>();
   // Listeners: Updates going to the UI
   final currentSongTitleNotifier = ValueNotifier<String>('');
+  final currentSongSingerNotifier = ValueNotifier<String>("");
+  final currentSongUrlNotifier = ValueNotifier<String>("");
+  final currentSongCoverImgNotifier = ValueNotifier<String>(
+      "https://water01.myh2o.top:1103/static/musics/cover/93.jpg");
   final playlistNotifier = ValueNotifier<List<String>>([]);
   final progressNotifier = ProgressNotifier();
   final repeatButtonNotifier = RepeatButtonNotifier();
@@ -29,26 +33,25 @@ class PageManager {
     _listenToChangesInSong();
   }
 
-  void play() {
-    _audioHandler.play();
+  Future<void> _loadPlaylist() async {
+    final playlist = await getSongs();
+    final mediaItems = playlist
+        .map((song) => MediaItem(
+              id: song.title,
+              artUri: Uri.parse(song.coverImg),
+              title: song.title,
+              extras: {'url': song.url},
+              artist: song.singer,
+            ))
+        .toList();
+    _audioHandler.addQueueItems(mediaItems);
   }
 
-  void pause() {
-    _audioHandler.pause();
-  }
-
-  void seek(Duration position) {
-    _audioHandler.seek(position);
-  }
-
-  void previous() {
-    _audioHandler.skipToPrevious();
-  }
-
-  void next() {
-    _audioHandler.skipToNext();
-  }
-
+  void play() => _audioHandler.play();
+  void pause() => _audioHandler.pause();
+  void seek(Duration position) => _audioHandler.seek(position);
+  void previous() => _audioHandler.skipToPrevious();
+  void next() => _audioHandler.skipToNext();
   void repeat() {
     repeatButtonNotifier.nextState();
     final repeatMode = repeatButtonNotifier.value;
@@ -75,44 +78,14 @@ class PageManager {
     }
   }
 
-  void add() async {
-    final songRepository = getIt<PlaylistRepository>();
-    final song = await songRepository.fetchAnotherSong();
-    final mediaItem = MediaItem(
-      id: song['id'] ?? '',
-      album: song['album'] ?? '',
-      title: song['title'] ?? '',
-      extras: {'url': song['url']},
-    );
-    _audioHandler.addQueueItem(mediaItem);
-  }
-
-  void remove() {
-    final lastIndex = _audioHandler.queue.value.length - 1;
-    if (lastIndex < 0) return;
-    _audioHandler.removeQueueItemAt(lastIndex);
-  }
-
+  void add() {}
+  void remove() {}
   void dispose() {
     _audioHandler.customAction('dispose');
   }
 
   void stop() {
     _audioHandler.stop();
-  }
-
-  Future<void> _loadPlaylist() async {
-    final songRepository = getIt<PlaylistRepository>();
-    final playlist = await songRepository.fetchInitialPlaylist();
-    final mediaItems = playlist
-        .map((song) => MediaItem(
-              id: song['id'] ?? '',
-              album: song['album'] ?? '',
-              title: song['title'] ?? '',
-              extras: {'url': song['url']},
-            ))
-        .toList();
-    _audioHandler.addQueueItems(mediaItems);
   }
 
   void _listenToChangesInPlaylist() {
@@ -182,6 +155,12 @@ class PageManager {
   void _listenToChangesInSong() {
     _audioHandler.mediaItem.listen((mediaItem) {
       currentSongTitleNotifier.value = mediaItem?.title ?? '';
+      currentSongSingerNotifier.value = mediaItem?.artist ?? '';
+      currentSongCoverImgNotifier.value =
+          mediaItem?.artUri.toString() ?? currentSongCoverImgNotifier.value;
+      currentSongUrlNotifier.value = mediaItem?.extras?["url"] ?? '';
+      print("[TAG] change in song");
+      print("[TAG ${currentSongCoverImgNotifier.value}]");
       _updateSkipButtons();
     });
   }
