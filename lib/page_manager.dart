@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:qingyin_music/api/api.dart';
+import 'package:qingyin_music/services/audio_handler.dart';
 import 'notifiers/play_button_notifier.dart';
 import 'notifiers/progress_notifier.dart';
 import 'notifiers/repeat_button_notifier.dart';
@@ -7,13 +8,12 @@ import 'package:audio_service/audio_service.dart';
 import 'services/service_locator.dart';
 
 class PageManager {
-  final _audioHandler = getIt<AudioHandler>();
+  final _audioHandler = getIt<MyAudioHandler>();
   // Listeners: Updates going to the UI
   final currentSongTitleNotifier = ValueNotifier<String>('');
   final currentSongSingerNotifier = ValueNotifier<String>("");
   final currentSongUrlNotifier = ValueNotifier<String>("");
-  final currentSongCoverImgNotifier = ValueNotifier<String>(
-      "https://water01.myh2o.top:1103/static/musics/cover/93.jpg");
+  final currentSongCoverImgNotifier = ValueNotifier<String>("");
   final playlistNotifier = ValueNotifier<List<String>>([]);
   final progressNotifier = ProgressNotifier();
   final repeatButtonNotifier = RepeatButtonNotifier();
@@ -24,7 +24,6 @@ class PageManager {
 
   // Events: Calls coming from the UI
   void init() async {
-    await _loadPlaylist();
     _listenToChangesInPlaylist();
     _listenToPlaybackState();
     _listenToCurrentPosition();
@@ -33,7 +32,9 @@ class PageManager {
     _listenToChangesInSong();
   }
 
-  Future<void> _loadPlaylist() async {
+  bool get playble => _audioHandler.playble;
+
+  Future<void> loadPlaylist() async {
     final playlist = await getSongs();
     final mediaItems = playlist
         .map((song) => MediaItem(

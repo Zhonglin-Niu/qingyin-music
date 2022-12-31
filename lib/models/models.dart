@@ -1,3 +1,5 @@
+import 'package:qingyin_music/api/api.dart';
+
 class PlaylistInfo {
   late String coverImg;
   late String title;
@@ -24,6 +26,15 @@ class PlaylistInfo {
     data['songs'] = songs;
     data['songs_link'] = songsLink;
     return data;
+  }
+
+  static Future<List<Object>> validName(path) async {
+    try {
+      var playlistInfo = await getPlayList(path: path);
+      return [true, playlistInfo.title];
+    } catch (e) {
+      return [false, ""];
+    }
   }
 
   @override

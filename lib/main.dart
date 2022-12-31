@@ -35,7 +35,7 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       title: '倾音悦',
       theme: ThemeData(
-        primarySwatch: Colors.cyan,
+        primarySwatch: Colors.lightBlue,
       ),
       home: const HomePage(),
       getPages: [

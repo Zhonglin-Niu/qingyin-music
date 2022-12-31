@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 export 'playbar.dart';
 export 'appbar.dart';
+export 'modals.dart';
 
 class MyText extends StatelessWidget {
   const MyText({
@@ -56,24 +57,28 @@ class MyShadowContainer extends StatelessWidget {
 
 class ShadowContainer extends Container {
   final double circularRadius;
-  ShadowContainer({
-    super.key,
-    super.alignment,
-    super.width,
-    super.height,
-    super.child,
-    super.clipBehavior,
-    super.color,
-    super.constraints,
-    super.foregroundDecoration,
-    super.margin,
-    super.padding,
-    super.transform,
-    super.transformAlignment,
-    this.circularRadius = 10,
-  }) : super(
+  final Color? shadowBg;
+  ShadowContainer(
+      {super.key,
+      super.alignment,
+      super.width,
+      super.height,
+      super.child,
+      super.clipBehavior,
+      super.color,
+      super.constraints,
+      super.foregroundDecoration,
+      super.margin,
+      super.padding,
+      super.transform,
+      super.transformAlignment,
+      this.circularRadius = 10,
+      this.shadowBg})
+      : super(
           decoration: BoxDecoration(
-            color: Colors.lightBlue.withOpacity(.7),
+            color: (shadowBg == null)
+                ? Colors.lightBlue.withOpacity(.7)
+                : shadowBg,
             borderRadius: BorderRadius.circular(circularRadius),
             boxShadow: const [
               BoxShadow(

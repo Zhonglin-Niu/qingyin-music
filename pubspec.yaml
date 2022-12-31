@@ -41,6 +41,8 @@ dependencies:
   get_it: ^7.2.0
   http: ^0.13.5
   cached_network_image: ^3.2.3
+  shared_preferences: ^2.0.15
+  quiver: ^3.2.1
 
 dev_dependencies:
   flutter_test:

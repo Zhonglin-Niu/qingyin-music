@@ -55,7 +55,9 @@ class _SongPageState extends State<SongPage> {
               child: Center(
                 child: ShadowContainer(
                   circularRadius: MediaQuery.of(context).size.width * 0.6,
-                  padding: const EdgeInsets.all(7),
+                  padding:
+                      EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
+                  shadowBg: const Color.fromARGB(255, 42, 108, 128),
                   child: Container(
                     clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
@@ -65,15 +67,21 @@ class _SongPageState extends State<SongPage> {
                     child: ValueListenableBuilder(
                       valueListenable: pageManager.currentSongCoverImgNotifier,
                       builder: (_, coverImg, __) {
-                        return CachedNetworkImage(
-                          placeholder: (context, url) => const MyText(
-                            content: "Loading...",
-                          ),
-                          imageUrl: coverImg,
-                          width: MediaQuery.of(context).size.width * 0.6,
-                          height: MediaQuery.of(context).size.width * 0.6,
-                          fit: BoxFit.cover,
-                        );
+                        return coverImg == ""
+                            ? Container(
+                                width: MediaQuery.of(context).size.width * 0.6,
+                                height: MediaQuery.of(context).size.width * 0.6,
+                                color: Colors.black12,
+                              )
+                            : CachedNetworkImage(
+                                placeholder: (context, url) => const MyText(
+                                  content: "Loading...",
+                                ),
+                                imageUrl: coverImg,
+                                width: MediaQuery.of(context).size.width * 0.6,
+                                height: MediaQuery.of(context).size.width * 0.6,
+                                fit: BoxFit.cover,
+                              );
                       },
                     ),
                   ),

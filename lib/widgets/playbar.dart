@@ -22,7 +22,9 @@ class _PlayBarState extends State<PlayBar> {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        Get.toNamed('/song');
+        if (pageManager.playble) {
+          Get.toNamed('/song');
+        }
       },
       child: ShadowContainer(
         width: double.infinity,
@@ -40,21 +42,21 @@ class _PlayBarState extends State<PlayBar> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                 ),
-                // child: CachedNetworkImage(
-                //   imageUrl: widget.songInfo.coverImg,
-                //   width: MediaQuery.of(context).size.width * 0.15,
-                //   height: MediaQuery.of(context).size.width * 0.15,
-                //   fit: BoxFit.cover,
-                // ),
                 child: ValueListenableBuilder(
                   valueListenable: pageManager.currentSongCoverImgNotifier,
                   builder: (_, coverImg, __) {
-                    return CachedNetworkImage(
-                      imageUrl: coverImg,
-                      width: MediaQuery.of(context).size.width * 0.15,
-                      height: MediaQuery.of(context).size.width * 0.15,
-                      fit: BoxFit.cover,
-                    );
+                    return coverImg == ""
+                        ? Container(
+                            width: MediaQuery.of(context).size.width * 0.15,
+                            height: MediaQuery.of(context).size.width * 0.15,
+                            color: Colors.black12,
+                          )
+                        : CachedNetworkImage(
+                            imageUrl: coverImg,
+                            width: MediaQuery.of(context).size.width * 0.15,
+                            height: MediaQuery.of(context).size.width * 0.15,
+                            fit: BoxFit.cover,
+                          );
                   },
                 ),
               ),
@@ -67,7 +69,6 @@ class _PlayBarState extends State<PlayBar> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // MyText(content: widget.songInfo.title),
                   ValueListenableBuilder<String>(
                     valueListenable: pageManager.currentSongTitleNotifier,
                     builder: (_, title, __) {
@@ -84,22 +85,9 @@ class _PlayBarState extends State<PlayBar> {
                       );
                     },
                   ),
-                  // MyText(
-                  //   content: widget.songInfo.singer,
-                  //   fontSize: 12,
-                  //   color: Colors.white60,
-                  // ),
                 ],
               ),
             ),
-            // IconButton(
-            //   icon: const Icon(
-            //     Icons.play_circle_fill,
-            //     size: 30,
-            //     color: Colors.white,
-            //   ),
-            //   onPressed: () {},
-            // ),
             ValueListenableBuilder<ButtonState>(
               valueListenable: pageManager.playButtonNotifier,
               builder: (_, value, __) {
@@ -118,7 +106,11 @@ class _PlayBarState extends State<PlayBar> {
                       icon: const Icon(Icons.play_arrow),
                       color: Colors.white,
                       iconSize: 30.0,
-                      onPressed: pageManager.play,
+                      onPressed: () {
+                        if (pageManager.playble) {
+                          pageManager.play();
+                        }
+                      },
                     );
                   case ButtonState.playing:
                     return IconButton(

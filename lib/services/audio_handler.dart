@@ -1,7 +1,8 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 
-Future<AudioHandler> initAudioService() async {
+/// 初始化音频服务
+Future<MyAudioHandler> initAudioService() async {
   return await AudioService.init(
     builder: () => MyAudioHandler(),
     config: const AudioServiceConfig(
@@ -17,6 +18,13 @@ class MyAudioHandler extends BaseAudioHandler {
   final _player = AudioPlayer();
   final _playlist = ConcatenatingAudioSource(children: []);
 
+  bool get playble {
+    if (queue.value.isEmpty) {
+      return false;
+    }
+    return true;
+  }
+
   MyAudioHandler() {
     _loadEmptyPlaylist();
     _notifyAudioHandlerAboutPlaybackEvents();
@@ -26,11 +34,7 @@ class MyAudioHandler extends BaseAudioHandler {
   }
 
   Future<void> _loadEmptyPlaylist() async {
-    try {
-      await _player.setAudioSource(_playlist);
-    } catch (e) {
-      print("Error: $e");
-    }
+    await _player.setAudioSource(_playlist);
   }
 
   @override
@@ -91,13 +95,20 @@ class MyAudioHandler extends BaseAudioHandler {
     }
   }
 
+  UriAudioSource _createAudioSource(MediaItem mediaItem) {
+    return AudioSource.uri(
+      Uri.parse(mediaItem.extras!['url']),
+      tag: mediaItem,
+    );
+  }
+
   @override
   Future<void> addQueueItems(List<MediaItem> mediaItems) async {
     // manage Just Audio
     final audioSource = mediaItems.map(_createAudioSource);
     _playlist.addAll(audioSource.toList());
     // notify system
-    final newQueue = queue.value..addAll(mediaItems);
+    final newQueue = queue.value..addAll(mediaItems); // 双点表示返回这个对象 -> q.value
     queue.add(newQueue);
   }
 
@@ -110,13 +121,7 @@ class MyAudioHandler extends BaseAudioHandler {
     _player.seek(Duration.zero, index: index);
   }
 
-  UriAudioSource _createAudioSource(MediaItem mediaItem) {
-    return AudioSource.uri(
-      Uri.parse(mediaItem.extras!['url']),
-      tag: mediaItem,
-    );
-  }
-
+  /// 控制中心 消息中心音乐播放bar
   void _notifyAudioHandlerAboutPlaybackEvents() {
     _player.playbackEventStream.listen((PlaybackEvent event) {
       final playing = _player.playing;
