@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:qingyin_music/api/api.dart';
+import 'package:qingyin_music/models/models.dart';
 import 'package:qingyin_music/services/audio_handler.dart';
 import 'notifiers/play_button_notifier.dart';
 import 'notifiers/progress_notifier.dart';
@@ -14,13 +14,14 @@ class PageManager {
   final currentSongSingerNotifier = ValueNotifier<String>("");
   final currentSongUrlNotifier = ValueNotifier<String>("");
   final currentSongCoverImgNotifier = ValueNotifier<String>("");
-  final playlistNotifier = ValueNotifier<List<String>>([]);
+  final playlistNotifier = ValueNotifier<List<SongInfo>>([]);
   final progressNotifier = ProgressNotifier();
   final repeatButtonNotifier = RepeatButtonNotifier();
   final isFirstSongNotifier = ValueNotifier<bool>(true);
   final playButtonNotifier = PlayButtonNotifier();
   final isLastSongNotifier = ValueNotifier<bool>(true);
   final isShuffleModeEnabledNotifier = ValueNotifier<bool>(false);
+  final showPlayBarNotifier = ValueNotifier<bool>(false);
 
   // Events: Calls coming from the UI
   void init() async {
@@ -34,11 +35,11 @@ class PageManager {
 
   bool get playble => _audioHandler.playble;
 
-  Future<void> loadPlaylist() async {
-    final playlist = await getSongs();
-    final mediaItems = playlist
+  Future<void> loadPlaylist(List<SongInfo> songs) async {
+    // final songs = await getSongs();
+    final mediaItems = songs
         .map((song) => MediaItem(
-              id: song.title,
+              id: song.hashCode.toString(),
               artUri: Uri.parse(song.coverImg),
               title: song.title,
               extras: {'url': song.url},
@@ -46,6 +47,7 @@ class PageManager {
             ))
         .toList();
     _audioHandler.addQueueItems(mediaItems);
+    showPlayBarNotifier.value = true;
   }
 
   void play() => _audioHandler.play();
@@ -53,6 +55,8 @@ class PageManager {
   void seek(Duration position) => _audioHandler.seek(position);
   void previous() => _audioHandler.skipToPrevious();
   void next() => _audioHandler.skipToNext();
+  int shuffleIndex(int index) => _audioHandler.shuffleIndex(index);
+  void skipToIndex(int index) => _audioHandler.skipToQueueItem(index);
   void repeat() {
     repeatButtonNotifier.nextState();
     final repeatMode = repeatButtonNotifier.value;
@@ -95,7 +99,13 @@ class PageManager {
         playlistNotifier.value = [];
         currentSongTitleNotifier.value = '';
       } else {
-        final newList = playlist.map((item) => item.title).toList();
+        final newList = playlist
+            .map((item) => SongInfo(
+                coverImg: item.artUri.toString(),
+                title: item.title,
+                singer: item.artist!,
+                url: item.extras?["url"]))
+            .toList();
         playlistNotifier.value = newList;
       }
       _updateSkipButtons();
@@ -161,7 +171,7 @@ class PageManager {
           mediaItem?.artUri.toString() ?? currentSongCoverImgNotifier.value;
       currentSongUrlNotifier.value = mediaItem?.extras?["url"] ?? '';
       print("[TAG] change in song");
-      print("[TAG ${currentSongCoverImgNotifier.value}]");
+      print("[TAG ${mediaItem?.extras?['url']}]");
       _updateSkipButtons();
     });
   }

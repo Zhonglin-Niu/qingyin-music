@@ -29,7 +29,6 @@ class _HomePageState extends State<HomePage> {
     // 初始化 本地简单数据存储器
     await Storage.init();
     final playlistNames = Storage.getList("playlists");
-    print("[TAG] $playlistNames");
     if (playlistNames != null) {
       for (var name in playlistNames) {
         try {
@@ -67,8 +66,15 @@ class _HomePageState extends State<HomePage> {
         body: Flex(
           direction: Axis.vertical,
           children: [
+            // 不加 const，因为这里面用了全局变量 playlists
+            // 加上的话 当 playlists 改变时，UI 不会刷新
             AllPlaylists(),
-            pageManager.playble ? const PlayBar() : const SizedBox(height: 20),
+            ValueListenableBuilder(
+              valueListenable: pageManager.showPlayBarNotifier,
+              builder: (_, show, __) {
+                return show ? const PlayBar() : const SizedBox(height: 20);
+              },
+            )
           ],
         ),
       ),

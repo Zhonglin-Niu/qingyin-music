@@ -1,6 +1,10 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 
+void pr(c) {
+  print("[TAG] $c");
+}
+
 /// 初始化音频服务
 Future<MyAudioHandler> initAudioService() async {
   return await AudioService.init(
@@ -25,11 +29,13 @@ class MyAudioHandler extends BaseAudioHandler {
     return true;
   }
 
+  int shuffleIndex(int index) => _player.shuffleIndices![index];
+
   MyAudioHandler() {
     _loadEmptyPlaylist();
     _notifyAudioHandlerAboutPlaybackEvents();
     _listenForDurationChanges();
-    _listenForCurrentSongIndexChanges();
+    // _listenForCurrentSongIndexChanges();
     _listenForSequenceStateChanges();
   }
 
@@ -90,7 +96,9 @@ class MyAudioHandler extends BaseAudioHandler {
     if (shuffleMode == AudioServiceShuffleMode.none) {
       _player.setShuffleModeEnabled(false);
     } else {
+      pr(queue.value[5]);
       await _player.shuffle();
+      pr(queue.value[shuffleIndex(5)]);
       _player.setShuffleModeEnabled(true);
     }
   }
@@ -161,6 +169,7 @@ class MyAudioHandler extends BaseAudioHandler {
   }
 
   void _listenForDurationChanges() {
+    // The duration of the current audio.
     _player.durationStream.listen((duration) {
       var index = _player.currentIndex;
       final newQueue = queue.value;
@@ -176,25 +185,28 @@ class MyAudioHandler extends BaseAudioHandler {
     });
   }
 
-  void _listenForCurrentSongIndexChanges() {
-    _player.currentIndexStream.listen((index) {
-      final playlist = queue.value;
-      if (index == null || playlist.isEmpty) return;
-      if (_player.shuffleModeEnabled) {
-        index = _player.shuffleIndices![index];
-      }
-      mediaItem.add(playlist[index]);
-    });
-  }
+  // void _listenForCurrentSongIndexChanges() {
+  //   _player.currentIndexStream.listen((index) {
+  //     pr("index $index");
+  //     final playlist = queue.value;
+  //     if (index == null || playlist.isEmpty) return;
+  //     // if (_player.shuffleModeEnabled) {
+  //     //   index = _player.shuffleIndices![index];
+  //     // }
+  //     // print("[TAG ended ${playlist[index]}]");
+  //     // mediaItem.add(playlist[index]);
+  //   });
+  // }
 
   void _listenForSequenceStateChanges() {
+    // 歌单状态改变
     _player.sequenceStateStream.listen((SequenceState? sequenceState) {
       final sequence = sequenceState?.effectiveSequence;
       if (sequence == null || sequence.isEmpty) return;
-      final items = sequence.map((source) => source.tag as MediaItem);
+      final items = sequence.map((source) {
+        return (source.tag) as MediaItem;
+      });
       queue.add(items.toList());
     });
   }
-
-  // String get coverImg => queue.value[_player.currentIndex].artUri.toString();
 }

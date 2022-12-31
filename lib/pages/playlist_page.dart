@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:qingyin_music/api/api.dart';
 import 'package:qingyin_music/models/models.dart';
+import 'package:qingyin_music/page_manager.dart';
+import 'package:qingyin_music/services/service_locator.dart';
 
 import '../widgets/widgets.dart';
 
@@ -15,8 +17,7 @@ class PlaylistPage extends StatefulWidget {
 
 class _PlaylistPageState extends State<PlaylistPage> {
   final PlaylistInfo playlist = Get.arguments;
-
-  late List<SongInfo> songs = [];
+  final pageManager = getIt<PageManager>();
 
   @override
   void initState() {
@@ -26,9 +27,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
 
   void _init() async {
     var rsp = await getSongs(url: playlist.songsLink);
-    setState(() {
-      songs = rsp;
-    });
+    pageManager.loadPlaylist(rsp);
   }
 
   @override
@@ -61,8 +60,16 @@ class _PlaylistPageState extends State<PlaylistPage> {
         body: Flex(
           direction: Axis.vertical,
           children: [
-            AllSongs(songs: songs),
-            const PlayBar(),
+            const AllSongs(),
+            ValueListenableBuilder(
+                valueListenable: pageManager.showPlayBarNotifier,
+                builder: (_, show, __) {
+                  return show
+                      ? const PlayBar()
+                      : const SizedBox(
+                          height: 20,
+                        );
+                }),
           ],
         ),
       ),
@@ -70,16 +77,19 @@ class _PlaylistPageState extends State<PlaylistPage> {
   }
 }
 
-class AllSongs extends StatelessWidget {
+class AllSongs extends StatefulWidget {
   const AllSongs({
     super.key,
-    required this.songs,
   });
 
-  final List<SongInfo> songs;
+  @override
+  State<AllSongs> createState() => _AllSongsState();
+}
 
+class _AllSongsState extends State<AllSongs> {
   @override
   Widget build(BuildContext context) {
+    final pageManager = getIt<PageManager>();
     return Expanded(
       child: Center(
         child: Padding(
@@ -89,13 +99,18 @@ class AllSongs extends StatelessWidget {
             height: double.infinity,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(15, 20, 15, 20),
-              child: ListView.builder(
-                scrollDirection: Axis.vertical,
-                itemCount: songs.length,
-                itemBuilder: (context, index) {
-                  return SingleSong(
-                    song: songs[index],
-                    index: index + 1,
+              child: ValueListenableBuilder(
+                valueListenable: pageManager.playlistNotifier,
+                builder: (_, songs, __) {
+                  return ListView.builder(
+                    scrollDirection: Axis.vertical,
+                    itemCount: songs.length,
+                    itemBuilder: (context, index) {
+                      return SingleSong(
+                        song: songs[index],
+                        index: index + 1,
+                      );
+                    },
                   );
                 },
               ),
@@ -111,19 +126,28 @@ class SingleSong extends StatelessWidget {
   final SongInfo song;
   final int index;
 
-  const SingleSong({
+  SingleSong({
     super.key,
     required this.song,
     required this.index,
   });
 
   final double imageRadius = 15;
+  final pageManager = getIt<PageManager>();
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        Get.toNamed("/song", arguments: song);
+        // if (pageManager.isShuffleModeEnabledNotifier.value) {
+        //   int newIndex = pageManager.shuffleIndex(index);
+        //   print("[TAG] $newIndex");
+        //   Get.toNamed("/song");
+        // } else {
+        //   Get.toNamed("/song");
+        // }
+        pageManager.skipToIndex(index - 1);
+        pageManager.play();
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
@@ -159,12 +183,6 @@ class SingleSong extends StatelessWidget {
                   height: MediaQuery.of(context).size.width * 0.12,
                   fit: BoxFit.cover,
                 ),
-                // child: Image.network(
-                //   song.coverImg,
-                //   width: MediaQuery.of(context).size.width * 0.12,
-                //   height: MediaQuery.of(context).size.width * 0.12,
-                //   fit: BoxFit.cover,
-                // ),
               ),
             ),
             const SizedBox(
@@ -184,8 +202,12 @@ class SingleSong extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
-              Icons.play_arrow,
+            IconButton(
+              onPressed: () {
+                pageManager.skipToIndex(index - 1);
+                pageManager.play();
+              },
+              icon: const Icon(Icons.play_arrow),
               color: Colors.white,
             )
           ],
