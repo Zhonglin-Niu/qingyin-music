@@ -35,7 +35,7 @@ class MyAudioHandler extends BaseAudioHandler {
     _loadEmptyPlaylist();
     _notifyAudioHandlerAboutPlaybackEvents();
     _listenForDurationChanges();
-    // _listenForCurrentSongIndexChanges();
+    _listenForCurrentSongIndexChanges();
     _listenForSequenceStateChanges();
   }
 
@@ -96,9 +96,7 @@ class MyAudioHandler extends BaseAudioHandler {
     if (shuffleMode == AudioServiceShuffleMode.none) {
       _player.setShuffleModeEnabled(false);
     } else {
-      pr(queue.value[5]);
       await _player.shuffle();
-      pr(queue.value[shuffleIndex(5)]);
       _player.setShuffleModeEnabled(true);
     }
   }
@@ -175,7 +173,17 @@ class MyAudioHandler extends BaseAudioHandler {
       final newQueue = queue.value;
       if (index == null || newQueue.isEmpty) return;
       if (_player.shuffleModeEnabled) {
-        index = _player.shuffleIndices![index];
+        // shuffleMode player: 花了我十个小时才de出来的bug 绝！
+        // 一个个函数打断点，debug，终于发现问题出在这儿，上面的 currentIndex
+        // 获取到之后，不需要再获取新的 index 了，因为在 sequence 里面就已经有了
+        // 直接更新就好了，currentIndex 默认就是现在在播放的 index
+        var nm = ((_player.sequence?[index].tag) as MediaItem)
+            .copyWith(duration: duration);
+        newQueue[index] = nm;
+        queue.add(newQueue);
+        mediaItem.add(nm);
+        pr("duration change $nm");
+        return;
       }
       final oldMediaItem = newQueue[index];
       final newMediaItem = oldMediaItem.copyWith(duration: duration);
@@ -185,18 +193,17 @@ class MyAudioHandler extends BaseAudioHandler {
     });
   }
 
-  // void _listenForCurrentSongIndexChanges() {
-  //   _player.currentIndexStream.listen((index) {
-  //     pr("index $index");
-  //     final playlist = queue.value;
-  //     if (index == null || playlist.isEmpty) return;
-  //     // if (_player.shuffleModeEnabled) {
-  //     //   index = _player.shuffleIndices![index];
-  //     // }
-  //     // print("[TAG ended ${playlist[index]}]");
-  //     // mediaItem.add(playlist[index]);
-  //   });
-  // }
+  void _listenForCurrentSongIndexChanges() {
+    _player.currentIndexStream.listen((index) {
+      final playlist = queue.value;
+      if (index == null || playlist.isEmpty) return;
+      if (_player.shuffleModeEnabled) {
+        index = _player.shuffleIndices![index];
+      }
+      mediaItem.add(playlist[index]);
+      pr("index change ${playlist[index]}");
+    });
+  }
 
   void _listenForSequenceStateChanges() {
     // 歌单状态改变

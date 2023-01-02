@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:qingyin_music/api/api.dart';
 import 'package:qingyin_music/models/models.dart';
 import 'package:qingyin_music/page_manager.dart';
+import 'package:qingyin_music/services/audio_handler.dart';
 import 'package:qingyin_music/services/service_locator.dart';
 
 import '../widgets/widgets.dart';
@@ -99,7 +100,7 @@ class _AllSongsState extends State<AllSongs> {
             height: double.infinity,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(15, 20, 15, 20),
-              child: ValueListenableBuilder(
+              child: ValueListenableBuilder<List<SongInfo>>(
                 valueListenable: pageManager.playlistNotifier,
                 builder: (_, songs, __) {
                   return ListView.builder(
@@ -108,7 +109,7 @@ class _AllSongsState extends State<AllSongs> {
                     itemBuilder: (context, index) {
                       return SingleSong(
                         song: songs[index],
-                        index: index + 1,
+                        index: index,
                       );
                     },
                   );
@@ -122,17 +123,23 @@ class _AllSongsState extends State<AllSongs> {
   }
 }
 
-class SingleSong extends StatelessWidget {
+class SingleSong extends StatefulWidget {
   final SongInfo song;
   final int index;
 
-  SingleSong({
+  const SingleSong({
     super.key,
     required this.song,
     required this.index,
   });
 
+  @override
+  State<SingleSong> createState() => _SingleSongState();
+}
+
+class _SingleSongState extends State<SingleSong> {
   final double imageRadius = 15;
+
   final pageManager = getIt<PageManager>();
 
   @override
@@ -146,7 +153,7 @@ class SingleSong extends StatelessWidget {
         // } else {
         //   Get.toNamed("/song");
         // }
-        pageManager.skipToIndex(index - 1);
+        pageManager.skipToIndex(widget.index);
         pageManager.play();
       },
       child: Container(
@@ -156,7 +163,7 @@ class SingleSong extends StatelessWidget {
             SizedBox(
               width: 30,
               child: MyText(
-                content: index.toString().padLeft(3),
+                content: (widget.index + 1).toString().padLeft(3),
                 color: Colors.white70,
               ),
             ),
@@ -178,7 +185,7 @@ class SingleSong extends StatelessWidget {
                   placeholder: (context, url) => const CircleAvatar(
                     backgroundColor: Colors.blue,
                   ),
-                  imageUrl: song.coverImg,
+                  imageUrl: widget.song.coverImg,
                   width: MediaQuery.of(context).size.width * 0.12,
                   height: MediaQuery.of(context).size.width * 0.12,
                   fit: BoxFit.cover,
@@ -193,9 +200,9 @@ class SingleSong extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  MyText(content: song.title),
+                  MyText(content: widget.song.title),
                   MyText(
-                    content: song.singer,
+                    content: widget.song.singer,
                     fontSize: 12,
                     color: Colors.white60,
                   ),
@@ -204,7 +211,7 @@ class SingleSong extends StatelessWidget {
             ),
             IconButton(
               onPressed: () {
-                pageManager.skipToIndex(index - 1);
+                pageManager.skipToIndex(widget.index);
                 pageManager.play();
               },
               icon: const Icon(Icons.play_arrow),

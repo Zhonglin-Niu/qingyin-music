@@ -170,10 +170,12 @@ class PageManager {
       currentSongCoverImgNotifier.value =
           mediaItem?.artUri.toString() ?? currentSongCoverImgNotifier.value;
       currentSongUrlNotifier.value = mediaItem?.extras?["url"] ?? '';
-      print("[TAG] change in song");
-      print("[TAG ${mediaItem?.extras?['url']}]");
       _updateSkipButtons();
     });
+  }
+
+  void updateUI(title) {
+    currentSongTitleNotifier.value = title;
   }
 
   void _updateSkipButtons() {
