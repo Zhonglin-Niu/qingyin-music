@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:qingyin_music/api/api.dart';
 import 'package:qingyin_music/page_manager.dart';
+import 'package:qingyin_music/services/audio_handler.dart';
 import 'package:qingyin_music/services/service_locator.dart';
 import 'package:qingyin_music/storages/storages.dart';
 import '../models/models.dart';
@@ -120,21 +121,20 @@ class _AllPlaylistsState extends State<AllPlaylists> {
                 /// 下拉刷新事件
                 onRefresh: () async {
                   final playlistNames = Storage.getList("playlists");
-                  if (playlistNames != null) {
-                    for (var name in playlistNames) {
-                      try {
-                        var rsp = await getPlayList(path: name);
-                        setState(() {
-                          // 判断没有在 playlists 里面加 add
-                          playlists.map((playlist) {
-                            if (playlist.songsLink != rsp.songsLink) {
-                              playlists.add(rsp);
-                            }
-                          });
-                        });
-                      } catch (e) {
-                        failInfo(msg: e.toString());
-                      }
+                  pr(playlistNames);
+                  setState(() {
+                    playlists.clear();
+                  });
+                  if (playlistNames == null) return;
+
+                  for (var name in playlistNames) {
+                    try {
+                      var rsp = await getPlayList(path: name);
+                      setState(() {
+                        playlists.add(rsp);
+                      });
+                    } catch (e) {
+                      failInfo(msg: e.toString());
                     }
                   }
                 },
@@ -152,10 +152,14 @@ class _AllPlaylistsState extends State<AllPlaylists> {
                         scrollDirection: Axis.vertical,
                         itemCount: 1,
                         itemBuilder: (context, index) {
-                          return const Center(
+                          var hasPlaylistNames = Storage.getList("playlists");
+                          var text = (hasPlaylistNames == null)
+                              ? "当前无歌单\n请在设置里先添加歌单\n然后下拉刷新"
+                              : "加载中……";
+                          return Center(
                             child: Text(
-                              "当前无歌单\n请在设置里先添加歌单\n然后下拉刷新",
-                              style: TextStyle(
+                              text,
+                              style: const TextStyle(
                                 fontSize: 30,
                                 color: Colors.white,
                               ),
@@ -272,7 +276,8 @@ class _MyDrawerState extends State<MyDrawer> {
       onConfirm: () async {
         /// 先关闭对话框
         Get.back();
-        Storage.set("BASE_URL", controller.text);
+        Storage.set("BASE_URL", controller.text.trim());
+        successInfo(msg: "当前 BASE_URL 为 ${controller.text}");
       },
 
       textCancel: "取消",
@@ -367,6 +372,10 @@ class _MyDrawerState extends State<MyDrawer> {
           ListTile(
             title: const MyText(content: "定时关闭"),
             onTap: () {},
+          ),
+          ListTile(
+            title: const MyText(content: "删除所有歌单"),
+            onTap: () => Storage.prefs?.clear(),
           ),
         ],
       ),

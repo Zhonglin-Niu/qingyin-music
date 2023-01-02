@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:qingyin_music/models/models.dart';
 import 'package:qingyin_music/services/audio_handler.dart';
+import 'api/api.dart';
 import 'notifiers/play_button_notifier.dart';
 import 'notifiers/progress_notifier.dart';
 import 'notifiers/repeat_button_notifier.dart';
@@ -35,8 +36,10 @@ class PageManager {
 
   bool get playble => _audioHandler.playble;
 
-  Future<void> loadPlaylist(List<SongInfo> songs) async {
-    // final songs = await getSongs();
+  Future<void> loadPlaylist(url) async {
+    _audioHandler.clearQueue();
+    playlistNotifier.value = []; // 更新 UI
+    var songs = await getSongs(url: url);
     final mediaItems = songs
         .map((song) => MediaItem(
               id: song.hashCode.toString(),
@@ -47,7 +50,6 @@ class PageManager {
             ))
         .toList();
     _audioHandler.addQueueItems(mediaItems);
-    showPlayBarNotifier.value = true;
   }
 
   void play() => _audioHandler.play();
@@ -165,11 +167,14 @@ class PageManager {
 
   void _listenToChangesInSong() {
     _audioHandler.mediaItem.listen((mediaItem) {
+      // 减少 UI 刷新
+      if (currentSongUrlNotifier.value == mediaItem?.extras?["url"]) return;
+      pr("mediaitem $mediaItem");
       currentSongTitleNotifier.value = mediaItem?.title ?? '';
       currentSongSingerNotifier.value = mediaItem?.artist ?? '';
       currentSongCoverImgNotifier.value =
           mediaItem?.artUri.toString() ?? currentSongCoverImgNotifier.value;
-      currentSongUrlNotifier.value = mediaItem?.extras?["url"] ?? '';
+      currentSongUrlNotifier.value = mediaItem?.extras?["url"] ?? "";
       _updateSkipButtons();
     });
   }

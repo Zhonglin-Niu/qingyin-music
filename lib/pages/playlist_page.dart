@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import 'package:qingyin_music/api/api.dart';
 import 'package:qingyin_music/models/models.dart';
 import 'package:qingyin_music/page_manager.dart';
-import 'package:qingyin_music/services/audio_handler.dart';
 import 'package:qingyin_music/services/service_locator.dart';
 
 import '../widgets/widgets.dart';
@@ -27,8 +26,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
   }
 
   void _init() async {
-    var rsp = await getSongs(url: playlist.songsLink);
-    pageManager.loadPlaylist(rsp);
+    pageManager.loadPlaylist(playlist.songsLink);
   }
 
   @override
@@ -142,20 +140,23 @@ class _SingleSongState extends State<SingleSong> {
 
   final pageManager = getIt<PageManager>();
 
+  void showPlayBarIfNeeded() {
+    if (!pageManager.showPlayBarNotifier.value) {
+      pageManager.showPlayBarNotifier.value = true;
+    }
+  }
+
+  void clickedSong({jump = false}) {
+    showPlayBarIfNeeded();
+    if (jump) Get.toNamed("/song");
+    pageManager.skipToIndex(widget.index);
+    pageManager.play();
+  }
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {
-        // if (pageManager.isShuffleModeEnabledNotifier.value) {
-        //   int newIndex = pageManager.shuffleIndex(index);
-        //   print("[TAG] $newIndex");
-        //   Get.toNamed("/song");
-        // } else {
-        //   Get.toNamed("/song");
-        // }
-        pageManager.skipToIndex(widget.index);
-        pageManager.play();
-      },
+      onTap: () => clickedSong(jump: true),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         child: Row(
@@ -210,10 +211,7 @@ class _SingleSongState extends State<SingleSong> {
               ),
             ),
             IconButton(
-              onPressed: () {
-                pageManager.skipToIndex(widget.index);
-                pageManager.play();
-              },
+              onPressed: clickedSong,
               icon: const Icon(Icons.play_arrow),
               color: Colors.white,
             )

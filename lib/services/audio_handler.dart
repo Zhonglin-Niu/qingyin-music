@@ -35,7 +35,7 @@ class MyAudioHandler extends BaseAudioHandler {
     _loadEmptyPlaylist();
     _notifyAudioHandlerAboutPlaybackEvents();
     _listenForDurationChanges();
-    _listenForCurrentSongIndexChanges();
+    // _listenForCurrentSongIndexChanges();
     _listenForSequenceStateChanges();
   }
 
@@ -118,6 +118,10 @@ class MyAudioHandler extends BaseAudioHandler {
     queue.add(newQueue);
   }
 
+  void clearQueue() {
+    _playlist.clear();
+  }
+
   @override
   Future<void> skipToQueueItem(int index) async {
     if (index < 0 || index >= queue.value.length) return;
@@ -169,41 +173,41 @@ class MyAudioHandler extends BaseAudioHandler {
   void _listenForDurationChanges() {
     // The duration of the current audio.
     _player.durationStream.listen((duration) {
+      // 虽然duration有时候会调用两次，但是有时会duration是空值
+      // 所以不能限制这个函数的执行次数
+
+      // 如果直接判断 duration 是否为空再 return 的话，会导致已经换歌，但是
+      // 歌曲还没加载出来，所以 UI 不刷新的情况
       var index = _player.currentIndex;
       final newQueue = queue.value;
       if (index == null || newQueue.isEmpty) return;
-      if (_player.shuffleModeEnabled) {
-        // shuffleMode player: 花了我十个小时才de出来的bug 绝！
-        // 一个个函数打断点，debug，终于发现问题出在这儿，上面的 currentIndex
-        // 获取到之后，不需要再获取新的 index 了，因为在 sequence 里面就已经有了
-        // 直接更新就好了，currentIndex 默认就是现在在播放的 index
-        var nm = ((_player.sequence?[index].tag) as MediaItem)
-            .copyWith(duration: duration);
-        newQueue[index] = nm;
-        queue.add(newQueue);
-        mediaItem.add(nm);
-        pr("duration change $nm");
-        return;
-      }
-      final oldMediaItem = newQueue[index];
-      final newMediaItem = oldMediaItem.copyWith(duration: duration);
+
+      // shuffleMode player: 花了我十个小时才de出来的bug 绝！
+      // 一个个函数打断点，debug，终于发现问题出在这儿，上面的 currentIndex
+      // 获取到之后，不需要再获取新的 index 了，因为在 sequence 里面就已经有了
+      // 直接更新就好了，currentIndex 默认就是现在在播放的 index
+      var newMediaItem = ((_player.sequence?[index].tag) as MediaItem)
+          .copyWith(duration: duration);
       newQueue[index] = newMediaItem;
       queue.add(newQueue);
       mediaItem.add(newMediaItem);
+      pr("duration change $newMediaItem");
     });
   }
 
-  void _listenForCurrentSongIndexChanges() {
-    _player.currentIndexStream.listen((index) {
-      final playlist = queue.value;
-      if (index == null || playlist.isEmpty) return;
-      if (_player.shuffleModeEnabled) {
-        index = _player.shuffleIndices![index];
-      }
-      mediaItem.add(playlist[index]);
-      pr("index change ${playlist[index]}");
-    });
-  }
+  // duration change 监听函数已经可以满足 UI 刷新的需求了，所以就不需要这个
+  // 监听事件了
+  // void _listenForCurrentSongIndexChanges() {
+  //   _player.currentIndexStream.listen((index) {
+  //     if (index == null || queue.value.isEmpty) return;
+  //     if (_player.shuffleModeEnabled) {
+  //       index = _player.shuffleIndices![index];
+  //     }
+  //     MediaItem item = _player.sequence?[index].tag;
+  //     mediaItem.add(item);
+  //     pr("index change $item");
+  //   });
+  // }
 
   void _listenForSequenceStateChanges() {
     // 歌单状态改变

@@ -25,7 +25,7 @@ class Storage {
     return prefs?.get(key);
   }
 
-  static getList(String key) {
+  static List<String>? getList(String key) {
     return prefs?.getStringList(key);
   }
 
