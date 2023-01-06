@@ -34,6 +34,7 @@ class _HomePageState extends State<HomePage> {
       for (var name in playlistNames) {
         try {
           var rsp = await getPlayList(path: name);
+          // setState 更新数据并更新使用此数据的 UI
           setState(() {
             playlists.add(rsp);
           });
@@ -83,6 +84,7 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+/// 左上角 Icon
 class OpenDrawerIcon extends StatelessWidget {
   const OpenDrawerIcon({super.key});
 
@@ -190,6 +192,7 @@ class SinglePlaylist extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
+        // 页面跳转
         Get.toNamed("/playlist", arguments: playlist);
       },
       child: Container(
@@ -243,6 +246,7 @@ class SinglePlaylist extends StatelessWidget {
   }
 }
 
+/// 应用左滑菜单
 class MyDrawer extends StatefulWidget {
   const MyDrawer({super.key});
 
